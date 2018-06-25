@@ -1,6 +1,6 @@
 # Installation
  
-The following installation steps were tested with Debian 9 (stretch) and Ubuntu 18.04 (Bionic Beaver). Please, run all commands either as root or sudoer user.
+The following installation steps were tested with Debian 9 (stretch), Ubuntu 18.04 (Bionic Beaver) and Ubuntu 16.04 (Xenial Xerus). Please, run all commands either as root or sudoer user.
 
 ### 1) To install python3 and some dependencies, one must run, in terminal:
 
@@ -13,6 +13,10 @@ The following installation steps were tested with Debian 9 (stretch) and Ubuntu 
 `wget https://bitbucket.org/chchrsc/rios/downloads/rios-1.4.5.tar.gz && tar -xvzf rios-1.4.5.tar.gz && cd rios-1.4.5 && python3 setup.py install --prefix=/opt/rios-1.4.5 && export PATH=$PATH:/opt/rios-1.4.5/bin/ && export PYTHONPATH=/opt/rios-1.4.5/lib/python$(python3 --version | cut -c8-10)/site-packages/ && cd .. && rm -rf rios-1.4.5 rios-1.4.5.tar.gz
 `
 # Usage Example
+
+First, some dataset has to be grabbed for the training to work. You can download an AVIRIS example scene issuing the following command:
+
+`wget -P data/ -m "ftp://avng.jpl.nasa.gov/AVNG_2015_data_distribution/L2/ang20150420t182050_rfl_v1e/"`
 
 Default data directory is **./data**, but you can place a custom directory in the optional [data_dir].
 
@@ -27,5 +31,3 @@ Default data directory is **./data**, but you can place a custom directory in th
 ### Running predict over the entire scene
 
 `python3 run.py predict [data_dir]`
-
-****Important: the current commit's default data directory doesn't provide example data (images). In order to run throughout all steps, user must provide its own directory for now.****

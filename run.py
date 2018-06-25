@@ -63,24 +63,24 @@ def get_point_idx(fname_shp, fname_geo):
         pts_idxs.append((px,py))
     return pts_idxs    
 
-def fetch_time_series(fname_raster, fname_shp):
+def fetch_seq(fname_raster, fname_shp):
     """
-    Take the points of fname_shp and gather the corresponding time series from fname_raster.
-    Return a matrix with all timeseries where each row holds the pixels' values through time.
+    Take the points of fname_shp and gather the corresponding sequences from fname_raster.
+    Return a matrix with all sequences where each row holds the pixels' values through layers.
     """
     pts_idxs = get_point_idx(fname_shp, fname_raster)
-    ds_band = gdal.Open(fname_raster)
-    n_images = ds_band.RasterCount
+    ds_image = gdal.Open(fname_raster)
+    n_layers = ds_image.RasterCount
     n_pts = len(pts_idxs)
-    matrix = np.empty(shape=(n_pts,n_images))
+    matrix = np.empty(shape=(n_pts,n_layers))
     for i,(px,py) in enumerate(pts_idxs):
-        tseries = ds_band.ReadAsArray(xoff=px, yoff=py, xsize=1, ysize=1)
-        matrix[i,:] = np.reshape(tseries,(1,n_images))
+        sequence = ds_image.ReadAsArray(xoff=px, yoff=py, xsize=1, ysize=1)
+        matrix[i,:] = np.reshape(sequence,(1,n_layers))
     return matrix
 
 def load_for_keras(*fname_raster, **fname_class):
     """
-    Generate the time-cube tensor with all the timeseries within *fname_raster files, corresponding 
+    Generate the tensor with all the sequences within *fname_raster files, corresponding 
     to the points within each class of **fname_class files. Also generate the matrix with corresponding  
     reference labels in One Hot Encoding formart.
     Return the tensors with shapes ready to use with keras.layers.LSTM. Position of each class 
@@ -89,30 +89,29 @@ def load_for_keras(*fname_raster, **fname_class):
     TODO: return also a mapping of the class id to the class name
     TODO: let user choose whether returned values shall be shuffled or not 
     """
-    bands = []
-    for band in fname_raster:
-        tseries = []
-        for fname_shp in fname_class.values():
-            current = fetch_time_series(band,fname_shp)
-            tseries.append(current)
-        bands.append(np.vstack(tseries))
-    X = np.dstack(bands)
+    features = []
+    for raster in fname_raster:
+        seqs = []
+        for shp_points in fname_class.values():
+            current = fetch_seq(raster,shp_points)
+            seqs.append(current)
+        features.append(np.vstack(seqs))
+    X = np.dstack(features)
     labels = []
     total = 0
-    for i,ts in enumerate(tseries): #use last retrieved tseries to get # of points of each class (assuming they have same # of points)
-        total += len(ts)
-        one_hot = [to_categorical(i,len(fname_class))]*len(ts)
+    for i,seq in enumerate(seqs): #use last retrieved sequence list to get # of points of each class (assuming they have same # of points)
+        total += len(seq)
+        one_hot = [to_categorical(i,len(fname_class))]*len(seq)
         labels.append(one_hot)
     Y = np.vstack(labels)
     return X,Y
 
 def load_db(lst_raster, lst_class, train_size=1.0, shuffle=True, random_state=None, cache=None):    
     """
-    Load a time-series dataset and format it for training and/or evaluating. Optionally store it in a cache file aiming 
+    Load a sequence dataset and format it for training and/or evaluating. Optionally store it in a cache file aiming 
     performance, persistence and reproducibility. If the value of cache is None, no cache file is created. lst_raster receives a list
-    of raster files: each one holds a unique spectral band for all images of the time-series. lst_class is a list of multipoint shapefiles
-    in which each of the them represents a diferent LCLU class.
-    Return either a tensor containing all time-serieses and its corresponding labels tensor, both partitioned into two subsets. The number 
+    of raster files. lst_class is a list of multipoint shapefiles in which each of the them represents a diferent LCLU class.
+    Return either a tensor containing all sequences and its corresponding labels tensor, both partitioned into two subsets. The number 
     of samples in each partition depends on the value of train_size, which is the proportion used to split the dataset. If shuffle
     is set to True, dataset is going to be shuffled before splited. The randomness of shuffle will be determined by random_state.
     """
@@ -138,7 +137,7 @@ def load_db(lst_raster, lst_class, train_size=1.0, shuffle=True, random_state=No
 
 def train(X_train, Y_train, epochs=200, log_dir=None, lmodel=None, bmodel_acc=None, bmodel_loss=None):
     """
-    Perform training of the RNN model where X_train is the input time-serieses tensor, Y_train it's correspondent labels, epochs is the number
+    Perform training of the RNN model where X_train is the input sequences tensor, Y_train it's correspondent labels, epochs is the number
     of epochs used in training; lmodel, the path to store file containing the model state after training all epochs; bmodel_acc,
     the path to store the model state after the epoch which yielded the best accuracy; and, bmodel_loss, analogous to the last
     but considering the lowest loss.
@@ -180,18 +179,15 @@ if not os.path.isdir(data_path):
     print("\nError: provided directory '{}' doesn't exist.\n".format(data_path))
     print_usage()
 
-###CACHE FILE WHERE TSERIES ARE STORED FOR PERSTENCE###
-fname_cache=data_path+"t_series.npz"
-###BANDS' FILES###
-fname_blue = data_path+"blue.vrt"
-fname_green = data_path+"green.vrt"
-fname_red = data_path+"red.vrt"
-fname_nir = data_path+"nir.vrt"
-fnames_rasters = (fname_blue, fname_green, fname_red, fname_nir)
+###CACHE FILE WHERE SEQUENCES ARE STORED FOR PERSTENCE###
+fname_cache=data_path+"sequences.npz"
+###RASTER###
+fname_raster = data_path+"avng.jpl.nasa.gov/AVNG_2015_data_distribution/L2/ang20150420t182050_rfl_v1e/ang20150420t182050_corr_v1e_img"
+fnames_rasters = (fname_raster,)
 ###CLASSES' SHAPE FILES###
-fname_pasture = data_path+"points_pasture.shp"
-fname_nonpast = data_path+"points_nonpast.shp"
-fnames_classes = {'pasture':fname_pasture, 'nonpast':fname_nonpast}
+fname_schwert = data_path+"points_schwert.shp"
+fname_nonschwert = data_path+"points_nonschwert.shp"
+fnames_classes = {'schwert':fname_schwert, 'nonschwert':fname_nonschwert}
 ###MODEL FILE###
 fname_last = data_path+"model_last.h5"
 fname_acc = data_path+"model_acc.h5"
@@ -219,6 +215,7 @@ if mode == 'train':
     except OSError:
         print("Warning: the script used to generate the model couldn't be saved onto datasource.")
 elif mode=='predict':
+    ### TODO: generalize predict process
     try:
         model = load_model(fname_acc)
         print("Loaded model from disk.")
@@ -228,25 +225,16 @@ elif mode=='predict':
     infiles = applier.FilenameAssociations()
     outfiles = applier.FilenameAssociations()
     otherargs = applier.OtherInputs()
-    infiles.blue = fname_blue
-    infiles.green = fname_green
-    infiles.red = fname_red
-    infiles.nir = fname_nir
+    infiles.raster = fname_raster
     outfiles.map = fname_output
     otherargs.model = model
 
     def genmap(info, inputs, outputs, otherargs):    
         size_x, size_y = info.getBlockSize()    
         outputs.map = np.empty((1,size_y,size_x),dtype=np.uint16)
-        inputs.blue = np.transpose(inputs.blue)
-        inputs.blue = inputs.blue.reshape(inputs.blue.shape[0]*inputs.blue.shape[1],inputs.blue.shape[2])
-        inputs.green = np.transpose(inputs.green)
-        inputs.green = inputs.green.reshape(inputs.green.shape[0]*inputs.green.shape[1],inputs.green.shape[2])
-        inputs.red = np.transpose(inputs.red)
-        inputs.red = inputs.red.reshape(inputs.red.shape[0]*inputs.red.shape[1],inputs.red.shape[2])
-        inputs.nir = np.transpose(inputs.nir)
-        inputs.nir = inputs.nir.reshape(inputs.nir.shape[0]*inputs.nir.shape[1],inputs.nir.shape[2])
-        tensor = np.dstack([inputs.blue,inputs.green,inputs.red,inputs.nir])
+        inputs.raster = np.transpose(inputs.raster)
+        inputs.raster = inputs.raster.reshape(inputs.raster.shape[0]*inputs.raster.shape[1],inputs.raster.shape[2])
+        tensor = np.dstack([inputs.raster,])
         predict = np.argmax(otherargs.model.predict(tensor),axis=1).astype(np.uint16)
         outputs.map = np.transpose(np.reshape(predict,(size_x,size_y,1)))
         print("Processing status " + str(info.getPercent()) + "%")
