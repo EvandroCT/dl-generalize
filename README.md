@@ -16,8 +16,8 @@ The following installation steps were tested with Debian 9 (stretch), Ubuntu 18.
 
 First, some dataset has to be grabbed for the training to work. You can download an AVIRIS example scene issuing the following command:
 
-`wget -P data/ -m "ftp://avng.jpl.nasa.gov/AVNG_2015_data_distribution/L2/ang20150420t182050_rfl_v1e/"`
-
+`wget https://www.lapig.iesa.ufg.br/drive/index.php/s/IWebcJhmreFeZYP/download -O data/example_scene.tar.gz`
+`tar -xvzf example_scene.tar.gz`
 Default data directory is **./data**, but you can place a custom directory in the optional [data_dir].
 
 ### Training the model
