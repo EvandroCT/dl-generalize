@@ -180,26 +180,26 @@ if not os.path.isdir(data_path):
     print_usage()
 
 ###CACHE FILE WHERE SEQUENCES ARE STORED FOR PERSTENCE###
-fname_cache=data_path+"sequences.npz"
+fname_cache=data_path+"/sequences.npz"
 ###RASTER###
-fname_raster = data_path+"avng.jpl.nasa.gov/AVNG_2015_data_distribution/L2/ang20150420t182050_rfl_v1e/ang20150420t182050_corr_v1e_img"
+fname_raster = data_path+"/ang20150420t182050_corr_v1e_img_clipped"
 fnames_rasters = (fname_raster,)
 ###CLASSES' SHAPE FILES###
-fname_schwert = data_path+"points_schwert.shp"
-fname_nonschwert = data_path+"points_nonschwert.shp"
+fname_schwert = data_path+"/points_schwert.shp"
+fname_nonschwert = data_path+"/points_nonschwert.shp"
 fnames_classes = {'schwert':fname_schwert, 'nonschwert':fname_nonschwert}
 ###MODEL FILE###
-fname_last = data_path+"model_last.h5"
-fname_acc = data_path+"model_acc.h5"
-fname_loss = data_path+"model_loss.h5"
+fname_last = data_path+"/model_last.h5"
+fname_acc = data_path+"/model_acc.h5"
+fname_loss = data_path+"/model_loss.h5"
 ###TENSORBOARD LOG DIR###
 log_dir = data_path+"log/"
 ###FILE HOLDING THE ENTIRE SCRIPT USED FOR A TRAINING INSTANCE###
-fname_used = data_path+"used_script.py"
+fname_used = data_path+"/used_script.py"
 ###CURRENT SCRIPT'S PATH###
 fname_script = os.path.realpath(__file__)
 ###CLASSIFIED IMAGE'S PATH###
-fname_output = data_path+"classified.img"
+fname_output = data_path+"/classified.img"
 
 X_train,X_test,Y_train,Y_test = load_db(fnames_rasters, fnames_classes, train_size=.85, shuffle=True, random_state=SEED, cache=fname_cache)
 
